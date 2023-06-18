@@ -1,0 +1,10 @@
+version: '3.6'
+services:
+  py-dev:
+    build: .
+    volumes:
+      - .:/root/workspace
+      - vs-server:/root/.vscode-server/extensions
+
+volumes:
+  vs-server: {}
