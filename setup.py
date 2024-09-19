@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='verizon_bill_parser',
     version='0.1',
-    packages=find_packages(),
+    packages=['verizon_bill_parser'],
     install_requires=[],
     url='https://github.com/amitrke/verizon-bill-parser',
     author='Amit Kumar',
