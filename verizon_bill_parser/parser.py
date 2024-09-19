@@ -1,2 +1,2 @@
-def hello_world():
+def parse():
     return "Hello, world!"
