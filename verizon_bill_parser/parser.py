@@ -5,6 +5,10 @@ def parse():
 
 def parse_directory(directory: str):
     resp_list = []
+    #Check if the directory exists
+    if not os.path.exists(directory):
+        raise Exception("Directory does not exist")
+    
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
         if os.path.isfile(file_path):
