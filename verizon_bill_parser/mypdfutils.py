@@ -115,7 +115,7 @@ class MyPDFUtils:
         for pagenumber in self.vzwPdfVersions[self.pdf_file_version]["pagesToParse"]:
             for page_layout in extract_pages(self.pdf_file_name, page_numbers=[pagenumber]):
                 self.pdf_extracted_pages.append(page_layout)
-                print("Page Number: " + str(pagenumber))
+                #print("Page Number: " + str(pagenumber))
 
     def parse_data_elements(self):
         for page in self.pdf_extracted_pages:
@@ -136,20 +136,20 @@ class MyPDFUtils:
             elementText = elementText[:-1]
         
         if eltype == "TextBox":
-            print("TextBox=" + elementText)
+            #print("TextBox=" + elementText)
             if self.currentContext == None and elementText in self.vzwPdfVersions[self.pdf_file_version]["contextMap"]:
                 self.currentContext = elementText
-                print("Context: " + self.currentContext)
+                #print("Context: " + self.currentContext)
             elif self.currentContext != None and elementText == self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["final"]:
                 del self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]
                 self.currentContext = None
-                print("Context: None")
+                #print("Context: None")
             elif self.currentContext != None and \
                 "callback" in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext] \
                 and elementText not in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["skip"]:
                 self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["callback"](elementText, element)
 
-        print("Element Type: " + eltype)
+        #print("Element Type: " + eltype)
         
     def v2_parseChargesByLineSummary(self, elementText, element):
         if elementText.startswith("Billing period"):
@@ -177,7 +177,7 @@ class MyPDFUtils:
         if not self.checkCoordinateLimits(element):
             return
     
-        print("v1_parseCharges: " + elementText)
+        #print("v1_parseCharges: " + elementText)
         if elementText.startswith("$"):
             self.parsedData["amounts"][self.amountIndex]["amount"] = elementText
             self.amountIndex += 1
