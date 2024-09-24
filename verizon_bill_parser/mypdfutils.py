@@ -1,6 +1,7 @@
 #Class MyPDFUtils
 from pdfminer.high_level import extract_text, extract_pages, LTPage
-from pypdf import PdfReader
+import os
+from datetime import datetime
 
 class MyPDFUtils:
 
@@ -27,6 +28,12 @@ class MyPDFUtils:
             "v2": {
                 "dateInit": "01/01/2024",
                 "dateEnd": "09/01/2024",
+                "detectVersionFromContent": {
+                    "page": 0,
+                    "text": "Bill date\nAccount number\nInvoice number\n",
+                    "x0": 276,
+                    "y0": 215,
+                },
                 "pagesToParse": [2],
                 "contextMap": {
                     "Bill summary by line": {
@@ -54,26 +61,39 @@ class MyPDFUtils:
         self.currentContext = None
         self.amountIndex = 0
         self.pdf_file_name = pdf_file_name
+        self.pdf_file_name_without_folder = self.pdf_file_name.split(os.sep)[-1]
         self.pdf_file_version = self.get_file_version()
         self.extract_pages()
         self.parse_data_elements()
     
     def get_file_version_from_filename(self):
         #Extract date from file name
-        date = self.pdf_file_name.split("_")[1].split(".")[0]
+        dateParts = self.pdf_file_name_without_folder.split("_")[1].split(".")
+        #Date object
+        date = datetime(int(dateParts[2]), int(dateParts[0]), int(dateParts[1]))
         #Check if date is within the range of any version
         for version in self.vzwPdfVersions:
-            if date >= self.vzwPdfVersions[version]["dateInit"] and date <= self.vzwPdfVersions[version]["dateEnd"]:
-                print("PDF File Version: " + version)
+            dateInit = datetime.strptime(self.vzwPdfVersions[version]["dateInit"], "%m/%d/%Y")
+            dateEnd = datetime.strptime(self.vzwPdfVersions[version]["dateEnd"], "%m/%d/%Y")
+            if date >= dateInit and date <= dateEnd:
                 return version
         return None
     
-    def extract_metadata(self, pdf_path):
-        reader = PdfReader(pdf_path)
-        meta = reader.metadata
-        print(meta)
-
-
+    def get_file_version_from_content(self) -> str:
+        for version in self.vzwPdfVersions:
+            if "detectVersionFromContent" in self.vzwPdfVersions[version]:
+                detectObj = self.vzwPdfVersions[version]["detectVersionFromContent"]
+                pageNumber = detectObj["page"]
+                for page_layout in extract_pages(self.pdf_file_name, page_numbers=[pageNumber]):
+                    for element in page_layout:
+                        if element.__class__.__name__ == "LTTextBoxHorizontal":
+                            elementX0Floor = int(element.x0)
+                            elementY0Floor = int(element.y0)
+                            if elementX0Floor == detectObj["x0"] and elementY0Floor == detectObj["y0"] \
+                                and element.get_text() == detectObj["text"]:
+                                return version         
+        return None
+        
     def get_file_version(self):
         '''
         File name should be in the format MyBill_MM.DD.YYYY.pdf
@@ -85,13 +105,11 @@ class MyPDFUtils:
             raise Exception(f"File {self.pdf_file_name} is not a PDF file")
         
         #Check if the file name is in the MyBill_MM.DD.YYYY.pdf format
-        if not self.pdf_file_name.startswith("MyBill_"):
-            self.extract_metadata(self.pdf_file_name)
-            raise Exception(f"File {self.pdf_file_name} is not in the MyBill_MM.DD.YYYY.pdf format")
+        if not self.pdf_file_name_without_folder.startswith("MyBill_"):
+            return self.get_file_version_from_content()
         else:
             return self.get_file_version_from_filename()
 
-    
     def extract_pages(self):
         self.pdf_extracted_pages: list[LTPage] = []
         for pagenumber in self.vzwPdfVersions[self.pdf_file_version]["pagesToParse"]:
