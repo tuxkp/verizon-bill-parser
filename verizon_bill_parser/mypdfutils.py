@@ -45,9 +45,14 @@ class MyPDFUtils:
                             "Review your bill online",
                             "An itemized bill breakdown of all\ncharges and credits is available on\nthe My Verizon app and online.",
                             "Scan the QR code\nwith your camera\napp or go to\ngo.vzw.com/bill.",
-                            "Surcharges, taxes and gov fees"
+                            "Surcharges, taxes and gov fees",
+                            "New plan added",
+                            "New device added"
                         ],
-                        "callback": self.v2_parseChargesByLineSummary
+                        "callback": self.v2_parseChargesByLineSummary,
+                        "coordinateMaxLimits": {
+                            "x0": 330
+                        }
                     }
                 }
             }
@@ -55,8 +60,9 @@ class MyPDFUtils:
 
         self.parsedData = {
             "amounts": [],
-            "account": None,
-            "invoice": None,
+            # "account": None,
+            # "invoice": None,
+            "fileName": pdf_file_name
         }
         self.currentContext = None
         self.amountIndex = 0
@@ -79,6 +85,18 @@ class MyPDFUtils:
                 return version
         return None
     
+    def match_coordinates(self, element, detectObj):
+        '''
+        Check if the element coordinates match the detectObj coordinates
+        plus or minus 5 pixel
+        '''
+        elementX0Floor = int(element.x0)
+        elementY0Floor = int(element.y0)
+        if elementX0Floor >= detectObj["x0"] - 5 and elementX0Floor <= detectObj["x0"] + 5 \
+            and elementY0Floor >= detectObj["y0"] - 5 and elementY0Floor <= detectObj["y0"] + 5:
+            return True
+        return False
+
     def get_file_version_from_content(self) -> str:
         for version in self.vzwPdfVersions:
             if "detectVersionFromContent" in self.vzwPdfVersions[version]:
@@ -87,11 +105,11 @@ class MyPDFUtils:
                 for page_layout in extract_pages(self.pdf_file_name, page_numbers=[pageNumber]):
                     for element in page_layout:
                         if element.__class__.__name__ == "LTTextBoxHorizontal":
-                            elementX0Floor = int(element.x0)
-                            elementY0Floor = int(element.y0)
-                            if elementX0Floor == detectObj["x0"] and elementY0Floor == detectObj["y0"] \
+                            if self.match_coordinates(element, detectObj) \
                                 and element.get_text() == detectObj["text"]:
-                                return version         
+                                return version
+                            # elif 'Bill date' in element.get_text():
+                            #     print("Bill date found")       
         return None
         
     def get_file_version(self):
@@ -130,39 +148,43 @@ class MyPDFUtils:
                     self.parse_element("Anno", element)
     
     def parse_element(self, eltype: str, element):
+        if eltype != "TextBox":
+            return
+        
+        if self.currentContext != None and 'coordinateMaxLimits' in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]:
+            if 'x0' in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["coordinateMaxLimits"]:
+                elementX0Floor = int(element.x0)
+                if elementX0Floor > self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["coordinateMaxLimits"]["x0"]:
+                    return
+            if 'y0' in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["coordinateMaxLimits"]:
+                elementY0Floor = int(element.y0)
+                if elementY0Floor > self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["coordinateMaxLimits"]["y0"]:
+                    return
+                
         elementText = element.get_text()
         #If the last two characters of elementText are \n then remove them
         if elementText[-1:] == "\n":
             elementText = elementText[:-1]
         
-        if eltype == "TextBox":
-            #print("TextBox=" + elementText)
-            if self.currentContext == None and elementText in self.vzwPdfVersions[self.pdf_file_version]["contextMap"]:
-                self.currentContext = elementText
-                #print("Context: " + self.currentContext)
-            elif self.currentContext != None and elementText == self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["final"]:
-                del self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]
-                self.currentContext = None
-                #print("Context: None")
-            elif self.currentContext != None and \
-                "callback" in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext] \
-                and elementText not in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["skip"]:
-                self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["callback"](elementText, element)
+        elementText = elementText.strip()
+        
+        #print("TextBox=" + elementText)
+        if self.currentContext == None and elementText in self.vzwPdfVersions[self.pdf_file_version]["contextMap"]:
+            self.currentContext = elementText
+            #print("Context: " + self.currentContext)
+        elif self.currentContext != None and elementText == self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["final"]:
+            del self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]
+            self.currentContext = None
+            #print("Context: None")
+        elif self.currentContext != None and \
+            "callback" in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext] \
+            and elementText not in self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["skip"]:
+            self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["callback"](elementText, element)
 
         #print("Element Type: " + eltype)
         
     def v2_parseChargesByLineSummary(self, elementText, element):
-        if elementText.startswith("Billing period"):
-            self.parsedData["billingPeriod"] = elementText.split(":")[1].strip()
-        elif elementText.startswith("Account:"):
-            '''
-            Account: 324XXXXXX-00001  \nInvoice: 8695XXXXXX\nBilling period: Jun 19 - Jul 18, 2024
-            '''
-            self.parsedData["account"] = elementText.split("\n")[0].split(":")[1].strip()
-            self.parsedData["invoice"] = elementText.split("\n")[1].split(":")[1].strip()
-        elif elementText.startswith("The total amount due for this month"):
-            pass
-        elif elementText.startswith("$"):
+        if elementText.startswith("$"):
             self.parsedData["amounts"][self.amountIndex]["amount"] = elementText
             self.amountIndex += 1
         else:
