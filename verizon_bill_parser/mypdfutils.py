@@ -188,6 +188,7 @@ class MyPDFUtils:
             self.parsedData["amounts"][self.amountIndex]["amount"] = elementText
             self.amountIndex += 1
         else:
+            elementText = elementText.replace("\n", " ")
             self.parsedData["amounts"].append(
                 {
                     "description": elementText,
@@ -204,6 +205,7 @@ class MyPDFUtils:
             self.parsedData["amounts"][self.amountIndex]["amount"] = elementText
             self.amountIndex += 1
         else:
+            elementText = elementText.replace("\n", " ")
             self.parsedData["amounts"].append(
                     {
                         "description": elementText,
