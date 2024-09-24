@@ -194,3 +194,6 @@ class MyPDFUtils:
             if element.x1 > self.vzwPdfVersions[self.pdf_file_version]["coordinateMaxLimits"]["x1"]:
                 return False
         return True
+    
+    def get_parsed_data(self):
+        return self.parsedData

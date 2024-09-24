@@ -8,7 +8,8 @@ def parse_file(file_path: str):
     if not os.path.exists(file_path):
         raise Exception(f"File {file_path} does not exist")
     
-    return MyPDFUtils(file_path)
+    pdfUtils = MyPDFUtils(file_path)
+    return pdfUtils.parsedData
 
 def parse_directory(directory: str):
     resp_list = []
