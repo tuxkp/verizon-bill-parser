@@ -2,6 +2,7 @@
 from pdfminer.high_level import extract_text, extract_pages, LTPage
 import os
 from datetime import datetime
+import re
 
 class MyPDFUtils:
 
@@ -77,6 +78,7 @@ class MyPDFUtils:
         dateParts = self.pdf_file_name_without_folder.split("_")[1].split(".")
         #Date object
         date = datetime(int(dateParts[2]), int(dateParts[0]), int(dateParts[1]))
+        self.parsedData["billDate"] = date.strftime("%m/%d/%Y")
         #Check if date is within the range of any version
         for version in self.vzwPdfVersions:
             dateInit = datetime.strptime(self.vzwPdfVersions[version]["dateInit"], "%m/%d/%Y")
@@ -182,19 +184,27 @@ class MyPDFUtils:
             self.vzwPdfVersions[self.pdf_file_version]["contextMap"][self.currentContext]["callback"](elementText, element)
 
         #print("Element Type: " + eltype)
-        
+    
+    def v2_append_amount(self, elementText):
+        amountDict = {
+            "amount": None
+        }
+        pattern = r'^(\w+\s\w+)\n.*\((\d{3}-\d{3}-\d{4})\)$'
+        match = re.match(pattern, elementText)
+        if match:
+            amountDict['name'] = match.group(1)
+            amountDict['phoneNum'] = match.group(2)
+        else:
+            elementText = elementText.replace("\n", " ")
+            amountDict['description'] = elementText
+        self.parsedData["amounts"].append(amountDict)
+    
     def v2_parseChargesByLineSummary(self, elementText, element):
         if elementText.startswith("$"):
             self.parsedData["amounts"][self.amountIndex]["amount"] = elementText
             self.amountIndex += 1
         else:
-            elementText = elementText.replace("\n", " ")
-            self.parsedData["amounts"].append(
-                {
-                    "description": elementText,
-                    "amount": None
-                }
-            )
+            self.v2_append_amount(elementText)
         
     def v1_parseCharges(self, elementText, element):
         if not self.checkCoordinateLimits(element):
