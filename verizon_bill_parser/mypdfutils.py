@@ -3,6 +3,7 @@ from pdfminer.high_level import extract_text, extract_pages, LTPage
 import os
 from datetime import datetime
 import re
+import logging
 
 class MyPDFUtils:
 
@@ -84,7 +85,9 @@ class MyPDFUtils:
             dateInit = datetime.strptime(self.vzwPdfVersions[version]["dateInit"], "%m/%d/%Y")
             dateEnd = datetime.strptime(self.vzwPdfVersions[version]["dateEnd"], "%m/%d/%Y")
             if date >= dateInit and date <= dateEnd:
+                logging.debug(f"File {self.pdf_file_name} is version {version}")
                 return version
+        logging.debug(f"File {self.pdf_file_name} is not within any version range")
         return None
     
     def match_coordinates(self, element, detectObj):
@@ -120,14 +123,17 @@ class MyPDFUtils:
         extract the date from the file name and return the version of the file
         by looking up the date in the vzwPdfVersions dictionary
         '''
+        logging.debug(f"Get file version for file: {self.pdf_file_name}")
         #Check if the file is a PDF file
         if not self.pdf_file_name.endswith(".pdf"):
             raise Exception(f"File {self.pdf_file_name} is not a PDF file")
         
         #Check if the file name is in the MyBill_MM.DD.YYYY.pdf format
         if not self.pdf_file_name_without_folder.startswith("MyBill_"):
+            logging.debug(f"File {self.pdf_file_name} does not start with MyBill_")
             return self.get_file_version_from_content()
         else:
+            logging.debug(f"File {self.pdf_file_name} starts with MyBill_")
             return self.get_file_version_from_filename()
 
     def extract_pages(self):
