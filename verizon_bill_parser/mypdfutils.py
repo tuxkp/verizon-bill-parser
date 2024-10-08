@@ -57,7 +57,9 @@ class MyPDFUtils:
                             "Plan changed",
                             "Perk added",
                             "Perk removed",
-                            "Device upgraded"
+                            "Device upgraded",
+                            "Service added",
+                            "Service removed",
                         ],
                         "callback": self.v2_parseChargesByLineSummary,
                         "coordinateMaxLimits": {
