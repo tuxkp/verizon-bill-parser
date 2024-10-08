@@ -7,7 +7,8 @@ def parse():
     return "Hello, world!"
 
 def set_logger_level(level: str):
-    logger.setLevel(level=level)
+    logging.basicConfig(level=level)
+    
 
 def parse_file(file_path: str):
     if not os.path.exists(file_path):
