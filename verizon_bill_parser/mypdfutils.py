@@ -32,7 +32,7 @@ class MyPDFUtils:
                 }
             },
             "v2": {
-                "dateInit": "01/01/2024",
+                "dateInit": "10/01/2023",
                 "dateEnd": "01/01/2025",
                 "detectVersionFromContent": {
                     "page": 0,
@@ -53,7 +53,11 @@ class MyPDFUtils:
                             "Scan the QR code\nwith your camera\napp or go to\ngo.vzw.com/bill.",
                             "Surcharges, taxes and gov fees",
                             "New plan added",
-                            "New device added"
+                            "New device added",
+                            "Plan changed",
+                            "Perk added",
+                            "Perk removed",
+                            "Device upgraded"
                         ],
                         "callback": self.v2_parseChargesByLineSummary,
                         "coordinateMaxLimits": {
@@ -91,7 +95,7 @@ class MyPDFUtils:
             if date >= dateInit and date <= dateEnd:
                 logger.debug(f"File {self.pdf_file_name} is version {version}")
                 return version
-        logger.debug(f"File {self.pdf_file_name} is not within any version range")
+        logger.warning(f"File {self.pdf_file_name} is not within any version range")
         return None
     
     def match_coordinates(self, element, detectObj):
