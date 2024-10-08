@@ -7,7 +7,10 @@ import logging
 
 class MyPDFUtils:
 
-    def __init__(self, pdf_file_name):
+    def __init__(self, pdf_file_name, log_level=logging.ERROR):
+        
+        logging.basicConfig(level=log_level)
+
         self.vzwPdfVersions = {
             "v1": {
                 "dateInit": "01/01/2022",

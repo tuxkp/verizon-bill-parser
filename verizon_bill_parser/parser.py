@@ -13,7 +13,7 @@ def parse_file(file_path: str):
     if not os.path.exists(file_path):
         raise Exception(f"File {file_path} does not exist")
     
-    pdfUtils = MyPDFUtils(file_path)
+    pdfUtils = MyPDFUtils(pdf_file_name=file_path, log_level=logger.level)
     return pdfUtils.parsedData
 
 def parse_directory(directory: str):
