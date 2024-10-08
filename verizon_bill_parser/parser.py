@@ -3,7 +3,6 @@ from .mypdfutils import MyPDFUtils
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 def parse():
     return "Hello, world!"
 
